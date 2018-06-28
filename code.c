@@ -55,31 +55,19 @@ unsigned long long get_msr(int cpu, off_t offset)
 void print_counters(PCC *cnt, PCC *avg) 
 {
 	int i;
-	double interval_float;
-
+	double interval_float; 
 	interval_float = tv_delta.tv_sec + tv_delta.tv_usec/1000000.0;
 
 	if (debug)
 		fprintf(stderr, "%.6f sec\n", interval_float);
 
 		PCC *p;
-
-		if (i == -1)
-                {
-			p = avg;
-			fprintf(stderr, "avg");
-		} 
-		else 
-	    	{
-			p = &cnt[i];
-		}
-
-		
+	        p = &cnt[i];
 		if (do_pkg)
-			fprintf(stderr, "%7.2f",100.0 * p->pc6/p->tsc);
+		      fprintf(stderr, "%7.2f",100.0 * p->pc6/p->tsc);
 		
 		putc('\n', stderr);
-	}
+}
 
 
 
@@ -179,9 +167,7 @@ int has_non_stop_tsc(unsigned int family, unsigned int model)
 void do_cpuid()
 {
 	unsigned int eax, ebx, ecx, edx, max_level;
-	char brand[16];
 	unsigned int fms, family, model, stepping;
-
 	eax = ebx = ecx = edx = 0;
 
 	asm("cpuid" : "=a" (max_level), "=b" (ebx), "=c" (ecx), "=d" (edx) : "a" (0));
