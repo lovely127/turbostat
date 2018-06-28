@@ -69,8 +69,6 @@ void print_counters(PCC *cnt, PCC *avg)
 		putc('\n', stderr);
 }
 
-
-
 #define SUBTRACT_COUNTER(after, before, delta) (delta = (after - before), (before > after))
 int compute_delta(PCC *after, PCC *before)
 {
@@ -98,10 +96,8 @@ int compute_delta(PCC *after, PCC *before)
 			fprintf(stderr, "package residency counter went backwards\n");
 			_exit(-1);
 		}
-
 	}
 }
-
 
 void get_counters(PCC *c)
 {
