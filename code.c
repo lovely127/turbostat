@@ -12,27 +12,20 @@
 #include <stdlib.h>
 
 #define MSR_TSC	0x10
-#define MSR_APERF	0xE8
-#define MSR_MPERF	0xE7
 #define MSR_PKG_C6_RESIDENCY	0x3F9
 
 unsigned int interval_sec = 5;	/* set with -i interval_sec */
 unsigned int debug;		/* set with -d */
 unsigned int do_pkg;
-unsigned int do_aperf = 1;	/* TBD set with CPUID */
 unsigned int iterations;
 unsigned int units = 1000000000.0;	/* Ghz etc */
 unsigned int do_non_stop_tsc;
 unsigned int do_nehalem_c_state_residency;
-int aperf_mperf_unstable;
-char *progname;
 int num_cpus;
 int *fd_msr;
 
 typedef struct per_core_counters {
 	unsigned long long tsc;
-	unsigned long long aperf;
-	unsigned long long mperf;
 	unsigned long long pc6;
 	
 } PCC;
@@ -69,9 +62,7 @@ void print_counters(PCC *cnt, PCC *avg)
 	if (debug)
 		fprintf(stderr, "%.6f sec\n", interval_float);
 
-    
 		PCC *p;
-
 
 		if (i == -1)
                 {
@@ -82,26 +73,6 @@ void print_counters(PCC *cnt, PCC *avg)
 	    	{
 			p = &cnt[i];
 		}
-
-
-		if (do_aperf)
-	        {
-			if (!aperf_mperf_unstable)
-			 {
-				//fprintf(stderr, "%7.2f",1.0 * p->tsc / units * p->aperf /p->mperf / interval_float);
-			 } 
-			 else
-			 {
-			   if (p->aperf > p->tsc || p->mperf > p->tsc) 
-                           {
-                            fprintf(stderr, "   ****");
-			   } 
-			 else
-			   {
-			    fprintf(stderr, "%6.1f*",1.0 * p->tsc / units * p->aperf /p->mperf / interval_float);
-			   }
-		        }
-	       }
 
 		
 		if (do_pkg)
@@ -140,27 +111,8 @@ int compute_delta(PCC *after, PCC *before)
 			_exit(-1);
 		}
 
-		error1 = SUBTRACT_COUNTER(after[i].aperf, before[i].aperf, pcc_delta[i].aperf);
-		error2 = SUBTRACT_COUNTER(after[i].mperf, before[i].mperf, pcc_delta[i].mperf);
-		if (error1 || error2) 
-		{
-			if (!aperf_mperf_unstable) 
-			{
-				fprintf(stderr, "%s: APERF or MPERF went backwards *\n", progname);
-				fprintf(stderr, "* Frequency results do not cover entire interval *\n");
-				fprintf(stderr, "* fix this by running Linux-2.6.30 or later *\n");
-
-				aperf_mperf_unstable = 1;
-			}
-			
-		}
-
-		if (pcc_delta[i].mperf == 0)
-			pcc_delta[i].mperf = 1;	/* divide by 0 protection */
 	}
 }
-
-
 
 
 void get_counters(PCC *c)
@@ -170,8 +122,6 @@ void get_counters(PCC *c)
 	for (i = 0; i < num_cpus; ++i)
 	{
 		c[i].tsc = get_msr(i, MSR_TSC);
-		if (do_aperf) c[i].aperf = get_msr(i, MSR_APERF);
-		if (do_aperf) c[i].mperf = get_msr(i, MSR_MPERF);
 		if (do_pkg) c[i].pc6 = get_msr(i, MSR_PKG_C6_RESIDENCY);
 		
 	}
@@ -235,8 +185,8 @@ void do_cpuid()
 	eax = ebx = ecx = edx = 0;
 
 	asm("cpuid" : "=a" (max_level), "=b" (ebx), "=c" (ecx), "=d" (edx) : "a" (0));
-
 	asm("cpuid" : "=a" (fms), "=c" (ecx), "=d" (edx) : "a" (1) : "ebx");
+
 	family = (fms >> 8) & 0xf;
 	model = (fms >> 4) & 0xf;
 	stepping = fms & 0xf;
@@ -245,7 +195,6 @@ void do_cpuid()
 
 	do_non_stop_tsc = has_non_stop_tsc(family, model);
 	do_nehalem_c_state_residency =  do_non_stop_tsc;
-
 	
 }
 
